@@ -101,6 +101,10 @@ This project ships Copilot customizations to assist with quality assurance:
 
 The shared **Database Explorer** canvas (`.github/extensions/database-explorer/`) provides a small UI and agent actions for browsing the project's SQLite tables and running one read-only `SELECT` or `WITH` query at a time. It uses the database at `.data/tailspin.db` (or `DATABASE_URL` when set), so run `npm run db:setup` before opening it in a fresh checkout.
 
+### Issue Triage Board
+
+The shared **Issue Triage Board** canvas (`.github/extensions/issue-triage-board/`) presents the repository's open work as a prioritized Kanban-style queue. Its top three cards explain why they need attention, and every card can add the issue details directly to the current Copilot session so work can begin immediately.
+
 ### PR Readiness Agent
 
 The **PR Readiness** agent (`.github/agents/pr-readiness.md`) is a pre-PR quality gate. Invoke it before opening a pull request to:
