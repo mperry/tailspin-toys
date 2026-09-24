@@ -3,12 +3,16 @@ import Layout from '../layouts/Layout.astro';
 import GameCard from '../components/GameCard.astro';
 import PageHero from '../components/PageHero.astro';
 import EmptyState from '../components/EmptyState.astro';
+import FilterPanel from '../components/FilterPanel.astro';
 import { getDatabase } from '../lib/db';
-import { getAllGames } from '../lib/games';
+import { getAllGames, getAllCategories, getAllPublishers } from '../lib/games';
 
 export const prerender = true;
 
-const games = await getAllGames(getDatabase());
+const db = getDatabase();
+const games = await getAllGames(db);
+const categories = await getAllCategories(db);
+const publishers = await getAllPublishers(db);
 ---
 
 <Layout title="Tailspin Toys - Crowdfunding your new favorite game!">
@@ -18,16 +22,128 @@ const games = await getAllGames(getDatabase());
       subtitle="Find your next game! And maybe even back one! Explore our collection!"
     />
 
+    <FilterPanel {categories} {publishers} />
+
     <div>
       <h2 class="text-2xl font-medium mb-6 text-slate-100">Featured Games</h2>
 
       {games.length === 0 ? (
         <EmptyState text="No games available at the moment." />
       ) : (
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="games-grid">
+        <div
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          data-testid="games-grid"
+          id="games-grid"
+        >
           {games.map((game) => <GameCard game={game} />)}
         </div>
       )}
+
+      <div id="empty-state-filtered" class="hidden">
+        <EmptyState text="No games match your filters." />
+      </div>
     </div>
   </div>
+
+  <script define:vars={{ gamesData: games }}>
+    // Embed all games data for client-side filtering
+    const allGames = gamesData;
+
+    const categoryCheckboxes = document.querySelectorAll('[data-testid^="category-checkbox-"]');
+    const publisherCheckboxes = document.querySelectorAll('[data-testid^="publisher-checkbox-"]');
+    const clearButton = document.querySelector('[data-testid="clear-filters-button"]');
+    const gamesGrid = document.querySelector('#games-grid');
+    const emptyStateFiltered = document.querySelector('#empty-state-filtered');
+
+    function getSelectedCategories() {
+      return Array.from(categoryCheckboxes)
+        .filter((cb) => cb.checked)
+        .map((cb) => Number(cb.value));
+    }
+
+    function getSelectedPublishers() {
+      return Array.from(publisherCheckboxes)
+        .filter((pb) => pb.checked)
+        .map((pb) => Number(pb.value));
+    }
+
+    function filterGames() {
+      const selectedCategories = getSelectedCategories();
+      const selectedPublishers = getSelectedPublishers();
+
+      // No filters applied, show all games
+      if (selectedCategories.length === 0 && selectedPublishers.length === 0) {
+        showAllGames();
+        return;
+      }
+
+      const filtered = allGames.filter((game) => {
+        const matchesCategory = selectedCategories.length === 0 || 
+          (game.category && selectedCategories.includes(game.category.id));
+        const matchesPublisher = selectedPublishers.length === 0 || 
+          (game.publisher && selectedPublishers.includes(game.publisher.id));
+
+        return matchesCategory && matchesPublisher;
+      });
+
+      updateGamesDisplay(filtered);
+    }
+
+    function showAllGames() {
+      if (!gamesGrid || !emptyStateFiltered) return;
+      gamesGrid.classList.remove('hidden');
+      emptyStateFiltered.classList.add('hidden');
+
+      allGames.forEach((game) => {
+        const card = gamesGrid.querySelector(`[data-game-id="${game.id}"]`);
+        if (card) {
+          card.classList.remove('hidden');
+        }
+      });
+    }
+
+    function updateGamesDisplay(filtered) {
+      if (!gamesGrid || !emptyStateFiltered) return;
+
+      if (filtered.length === 0) {
+        gamesGrid.classList.add('hidden');
+        emptyStateFiltered.classList.remove('hidden');
+      } else {
+        gamesGrid.classList.remove('hidden');
+        emptyStateFiltered.classList.add('hidden');
+
+        allGames.forEach((game) => {
+          const card = gamesGrid.querySelector(`[data-game-id="${game.id}"]`);
+          const isInFiltered = filtered.some((g) => g.id === game.id);
+          if (card) {
+            if (isInFiltered) {
+              card.classList.remove('hidden');
+            } else {
+              card.classList.add('hidden');
+            }
+          }
+        });
+      }
+    }
+
+    // Attach event listeners
+    categoryCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener('change', filterGames);
+    });
+
+    publisherCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener('change', filterGames);
+    });
+
+    clearButton?.addEventListener('click', () => {
+      categoryCheckboxes.forEach((cb) => {
+        cb.checked = false;
+      });
+      publisherCheckboxes.forEach((pb) => {
+        pb.checked = false;
+      });
+      filterGames();
+    });
+  </script>
 </Layout>
+
