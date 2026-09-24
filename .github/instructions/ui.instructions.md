@@ -49,7 +49,13 @@ Refer to technology-specific instruction files:
 - Create reusable components for common UI patterns
 - Keep components focused on a single responsibility
 - Use props for configuration, not duplication
-- Document component APIs with TypeScript types
+- Document each reusable Astro component's `Props` interface and its props, including meaningful constraints and defaults, so callers can use the API without inspecting the implementation. See [`astro.instructions.md`](astro.instructions.md).
+
+### Comments and Documentation
+
+- Comments should explain why code exists, the intent behind it, or a non-obvious decision — not paraphrase the code or markup.
+- Keep comments current when changing related behavior; outdated comments are defects and should be corrected or removed.
+- Use TSDoc/JSDoc for exported data-layer functions as described in [`drizzle.instructions.md`](drizzle.instructions.md).
 
 ## Development Workflow
 
